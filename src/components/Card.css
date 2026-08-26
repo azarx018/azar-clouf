@@ -1,0 +1,19 @@
+.card {
+  background: var(--surface);
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.card--interactive {
+  cursor: pointer;
+  transition: transform 150ms var(--ease), border-color var(--duration) var(--ease);
+}
+
+.card--interactive:active {
+  transform: scale(0.98);
+}
+
+.card--interactive:hover {
+  border-color: var(--horizon);
+}

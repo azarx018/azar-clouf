@@ -1,0 +1,63 @@
+.upload-queue {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.upload-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.upload-item__ring {
+  flex-shrink: 0;
+}
+
+.upload-item__pct {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.upload-item__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.upload-item__name {
+  font-size: var(--text-md);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upload-item__status {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--mist);
+  margin-top: 2px;
+}
+
+.upload-item__status--completed {
+  color: var(--success);
+}
+
+.upload-item__status--failed {
+  color: var(--error);
+}
+
+.upload-item__action {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border: none;
+  background: var(--elevated);
+  border-radius: var(--radius-full);
+  color: var(--mist);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}

@@ -1,0 +1,26 @@
+.icon-btn {
+  width: var(--touch-target);
+  height: var(--touch-target);
+  border-radius: var(--radius-full);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--ink);
+  background: transparent;
+  transition: background var(--duration) var(--ease);
+}
+
+.icon-btn:hover {
+  background: var(--elevated);
+}
+
+.icon-btn--filled {
+  background: var(--elevated);
+}
+
+.icon-btn--accent {
+  background: var(--horizon);
+  color: #fff;
+}

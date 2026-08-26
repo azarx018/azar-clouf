@@ -1,0 +1,43 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch-target);
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  border: none;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--text-md);
+  cursor: pointer;
+  transition: opacity var(--duration) var(--ease), transform 120ms var(--ease);
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--horizon);
+  color: #fff;
+}
+
+.btn--secondary {
+  background: var(--elevated);
+  color: var(--ink);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--horizon);
+}
+
+.btn--danger {
+  background: transparent;
+  color: var(--error);
+}
