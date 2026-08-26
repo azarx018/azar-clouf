@@ -8,11 +8,11 @@ import { useAsync } from "../hooks/useAsync.js";
 import { usePageTitle } from "../pageTitle.jsx";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./FolderPage.css";
 
 export default function FolderPage({ params }) {
   const { navigate } = useRouter();
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions();
 
   const { data, loading, error, reload } = useAsync(async () => {
     const [folder, subfolders, files, breadcrumb] = await Promise.all([
@@ -24,9 +24,14 @@ export default function FolderPage({ params }) {
     return { folder, subfolders, files, breadcrumb };
   }, [params.id]);
 
+  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+    onDeleted: reload,
+    onFavoriteChanged: reload,
+  });
+
   usePageTitle(data?.folder?.name);
 
-  if (error) return <ErrorState onRetry={reload} />;
+  if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
 
   if (loading) {
     return (

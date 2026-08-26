@@ -31,3 +31,11 @@
   color: var(--mist);
   margin-top: 2px;
 }
+
+.settings-row--danger .settings-row__label {
+  color: var(--error);
+}
+
+.settings-row__icon--danger {
+  color: var(--error);
+}

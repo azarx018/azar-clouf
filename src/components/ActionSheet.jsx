@@ -1,11 +1,20 @@
 import React from "react";
-import { Download, Edit2, FolderInput, Share2, Info, Trash2 } from "lucide-react";
+import { Download, Edit2, FolderInput, Share2, Info, Star, Trash2 } from "lucide-react";
 import "./ActionSheet.css";
 
 const DEFAULT_ACTIONS = [
   { key: "download", label: "Download", icon: Download },
+  { key: "favorite", label: "Add to Favorites", icon: Star },
   { key: "rename", label: "Rename", icon: Edit2 },
   { key: "move", label: "Move", icon: FolderInput },
+  { key: "share", label: "Share", icon: Share2 },
+  { key: "info", label: "Get info", icon: Info },
+  { key: "delete", label: "Delete", icon: Trash2, danger: true },
+];
+
+export const FAVORITES_PAGE_ACTIONS = [
+  { key: "download", label: "Download", icon: Download },
+  { key: "unfavorite", label: "Remove from Favorites", icon: Star },
   { key: "share", label: "Share", icon: Share2 },
   { key: "info", label: "Get info", icon: Info },
   { key: "delete", label: "Delete", icon: Trash2, danger: true },

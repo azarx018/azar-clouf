@@ -1,8 +1,9 @@
-import React from "react";
-import { Cloud, Clock, Settings, Star, Trash2, Search as SearchIcon, MoreVertical, ChevronLeft } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Cloud, Clock, Settings, Star, Trash2, Search as SearchIcon, MoreVertical, ChevronLeft, FolderPlus, RefreshCw, LogOut } from "lucide-react";
 import { useRouter, Route } from "./router/router.jsx";
 import { usePageTitleValue } from "./pageTitle.jsx";
 import { useTheme } from "./theme.jsx";
+import { useAuth } from "./auth/AuthContext.jsx";
 import MyCloudPage from "./pages/MyCloudPage.jsx";
 import FolderPage from "./pages/FolderPage.jsx";
 import FileDetailPage from "./pages/FileDetailPage.jsx";
@@ -12,7 +13,10 @@ import FavoritesPage from "./pages/FavoritesPage.jsx";
 import TrashPage from "./pages/TrashPage.jsx";
 import UploadPage from "./pages/UploadPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
-import { IconButton, OfflineBanner } from "./components/index.js";
+import LoginPage from "./pages/LoginPage.jsx";
+import RegisterPage from "./pages/RegisterPage.jsx";
+import { IconButton, OfflineBanner, ActionSheet, ErrorState, useSnackbar } from "./components/index.js";
+import { getFriendlyErrorMessage } from "./services/errorMessages.js";
 import "./App.css";
 
 const NAV_ITEMS = [
@@ -41,10 +45,71 @@ function staticTitleFor(path) {
 }
 
 export default function App() {
+  const { status, retry } = useAuth();
+  const { path, navigate } = useRouter();
+
+  // Startup gate: never render the Cloud UI before the session is validated,
+  // so there's no flash of authenticated content before a redirect to Login.
+  if (status === "checking") {
+    return (
+      <div className="auth-loading">
+        <Cloud size={28} />
+      </div>
+    );
+  }
+
+  if (status === "check_failed") {
+    return (
+      <div className="auth-loading">
+        <ErrorState
+          title="Couldn't connect"
+          description="We couldn't verify your session. Check your connection and try again."
+          onRetry={retry}
+        />
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    if (path === "/register") {
+      return <RegisterPage onNavigateLogin={() => navigate("/login")} />;
+    }
+    return <LoginPage onNavigateRegister={() => navigate("/register")} />;
+  }
+
+  return <CloudShell />;
+}
+
+function CloudShell() {
   const { path, navigate, goBack } = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const dynamicTitle = usePageTitleValue();
   const isRoot = path === "/";
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const { showSnackbar } = useSnackbar();
+
+  // If we just logged in while sitting on /login or /register, hop back to My Cloud.
+  useEffect(() => {
+    if (path === "/login" || path === "/register") {
+      navigate("/", { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const moreActions = [
+    { key: "new-folder", label: "New folder", icon: FolderPlus },
+    { key: "refresh", label: "Refresh", icon: RefreshCw },
+  ];
+
+  const handleMoreAction = (key) => {
+    setMoreMenuOpen(false);
+    if (key === "refresh") {
+      window.location.reload();
+    } else if (key === "new-folder") {
+      showSnackbar("New folder — coming soon");
+    }
+  };
 
   return (
     <div className="app-root">
@@ -75,6 +140,10 @@ export default function App() {
           <Settings size={18} />
           <span>Settings</span>
         </button>
+        <button className="sidebar__item" onClick={logout}>
+          <LogOut size={18} />
+          <span>Log out</span>
+        </button>
       </aside>
 
       <div className="app-main">
@@ -95,7 +164,7 @@ export default function App() {
             {path !== "/search" && (
               <IconButton icon={SearchIcon} label="Search" onClick={() => navigate("/search")} />
             )}
-            <IconButton icon={MoreVertical} label="More options" />
+            <IconButton icon={MoreVertical} label="More options" onClick={() => setMoreMenuOpen(true)} />
           </div>
         </header>
 
@@ -108,7 +177,7 @@ export default function App() {
           <Route path="/favorites" component={FavoritesPage} />
           <Route path="/trash" component={TrashPage} />
           <Route path="/upload" component={UploadPage} />
-          <Route path="/settings" component={() => <SettingsPage theme={theme} onToggleTheme={toggleTheme} />} />
+          <Route path="/settings" component={() => <SettingsPage theme={theme} onToggleTheme={toggleTheme} onLogout={logout} />} />
         </main>
       </div>
 
@@ -126,6 +195,12 @@ export default function App() {
         ))}
       </nav>
     </div>
+      <ActionSheet
+        open={moreMenuOpen}
+        onClose={() => setMoreMenuOpen(false)}
+        onAction={handleMoreAction}
+        actions={moreActions}
+      />
     </div>
   );
 }

@@ -5,6 +5,8 @@ import { ThemeProvider } from "./theme.jsx";
 import { RouterProvider } from "./router/router.jsx";
 import { SnackbarProvider } from "./components/Snackbar.jsx";
 import { PageTitleProvider } from "./pageTitle.jsx";
+import { AuthProvider } from "./auth/AuthContext.jsx";
+import { UploadProvider } from "./upload/UploadContext.jsx";
 import "./styles/tokens.css";
 import "./styles/shared.css";
 
@@ -14,7 +16,11 @@ createRoot(document.getElementById("root")).render(
       <RouterProvider>
         <SnackbarProvider>
           <PageTitleProvider>
-            <App />
+            <AuthProvider>
+              <UploadProvider>
+                <App />
+              </UploadProvider>
+            </AuthProvider>
           </PageTitleProvider>
         </SnackbarProvider>
       </RouterProvider>

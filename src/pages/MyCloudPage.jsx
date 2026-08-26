@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Plus, Upload, FolderPlus } from "lucide-react";
 import { Card, AtmosphereRing, Dialog, ActionSheet, Button, Skeleton, ErrorState, useSnackbar } from "../components/index.js";
 import FolderCard from "../components/FolderCard.jsx";
@@ -7,6 +7,8 @@ import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { useUploadQueue } from "../upload/UploadContext.jsx";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./MyCloudPage.css";
 
 function formatGB(bytes) {
@@ -16,16 +18,31 @@ function formatGB(bytes) {
 export default function MyCloudPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const { navigate } = useRouter();
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions();
+  const { enqueueFiles } = useUploadQueue();
+  const fileInputRef = useRef(null);
 
   const storageState = useAsync(() => CloudService.getStorageOverview(), []);
   const foldersState = useAsync(() => CloudService.getSubfolders("root"), []);
   const filesState = useAsync(() => CloudService.getFiles("root"), []);
 
+  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+    onDeleted: () => filesState.reload(),
+  });
+
+  const handleFilesPicked = (e) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      enqueueFiles(files, "root");
+      navigate("/upload");
+    }
+    e.target.value = "";
+  };
+
   const anyError = storageState.error || foldersState.error || filesState.error;
   if (anyError) {
     return (
       <ErrorState
+        description={getFriendlyErrorMessage(anyError)}
         onRetry={() => {
           storageState.reload();
           foldersState.reload();
@@ -113,12 +130,20 @@ export default function MyCloudPage() {
         <Plus size={24} />
       </button>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        onChange={handleFilesPicked}
+      />
+
       <Dialog open={uploadOpen} title="Add to AzarCloud" onClose={() => setUploadOpen(false)}>
         <div className="upload-sheet__options">
-          <Button variant="secondary" icon={Upload} onClick={() => { setUploadOpen(false); navigate("/upload"); }}>
+          <Button variant="secondary" icon={Upload} onClick={() => { setUploadOpen(false); fileInputRef.current?.click(); }}>
             Upload files
           </Button>
-          <Button variant="secondary" icon={FolderPlus} onClick={() => { setUploadOpen(false); navigate("/upload"); }}>
+          <Button variant="secondary" icon={FolderPlus} onClick={() => { setUploadOpen(false); fileInputRef.current?.click(); }}>
             Upload folder
           </Button>
         </div>

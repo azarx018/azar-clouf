@@ -4,6 +4,19 @@
   min-height: 100vh;
 }
 
+/* Shown briefly on startup while the stored session token is validated,
+   and on a failed validation (e.g. offline). Prevents any flash of the
+   authenticated Cloud UI before auth state is known. */
+.auth-loading {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mist);
+  padding: var(--space-4);
+}
+
 .app-shell {
   display: flex;
   flex: 1;

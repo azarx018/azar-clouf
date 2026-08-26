@@ -1,11 +1,12 @@
 import React, { useState } from "react";
-import { Download, Edit2, FolderInput, Share2, Trash2 } from "lucide-react";
+import { Download, Edit2, FolderInput, Share2, Star, Trash2 } from "lucide-react";
 import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, useSnackbar } from "../components/index.js";
 import { iconForType } from "../utils/fileIcons.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { usePageTitle } from "../pageTitle.jsx";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./FileDetailPage.css";
 
 export default function FileDetailPage({ params }) {
@@ -16,7 +17,7 @@ export default function FileDetailPage({ params }) {
 
   usePageTitle(file?.name);
 
-  if (error) return <ErrorState onRetry={reload} />;
+  if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
 
   if (loading) {
     return (
@@ -44,12 +45,22 @@ export default function FileDetailPage({ params }) {
 
   const runAction = async (key) => {
     switch (key) {
-      case "download": {
-        const { url } = await CloudService.downloadFile(file.id);
-        showSnackbar(`Downloading ${file.name}...`);
-        void url; // real implementation triggers browser download with this URL
+      case "download":
+        try {
+          await CloudService.downloadFile(file.id);
+          showSnackbar(`Downloading ${file.name}...`);
+        } catch (err) {
+          showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+        }
         break;
-      }
+      case "favorite":
+        try {
+          await CloudService.addFavorite(file.id);
+          showSnackbar(`Added "${file.name}" to Favorites`);
+        } catch (err) {
+          showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+        }
+        break;
       case "rename":
         showSnackbar(`Rename ${file.name} — coming soon`);
         break;
@@ -66,9 +77,13 @@ export default function FileDetailPage({ params }) {
 
   const confirmDelete = async () => {
     setDeleteOpen(false);
-    await CloudService.deleteFile(file.id);
-    showSnackbar(`"${file.name}" moved to Trash`);
-    navigate(backTo);
+    try {
+      await CloudService.deleteFile(file.id);
+      showSnackbar(`"${file.name}" moved to Trash`);
+      navigate(backTo);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
   };
 
   return (
@@ -93,6 +108,7 @@ export default function FileDetailPage({ params }) {
 
       <div className="file-detail__actions">
         <Button icon={Download} onClick={() => runAction("download")}>Download</Button>
+        <Button variant="secondary" icon={Star} onClick={() => runAction("favorite")}>Favorite</Button>
         <Button variant="secondary" icon={Edit2} onClick={() => runAction("rename")}>Rename</Button>
         <Button variant="secondary" icon={FolderInput} onClick={() => runAction("move")}>Move</Button>
         <Button variant="secondary" icon={Share2} onClick={() => runAction("share")}>Share</Button>

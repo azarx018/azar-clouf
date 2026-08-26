@@ -1,137 +1,168 @@
-import {
-  storage as mockStorage,
-  folderTree,
-  filesByFolder,
-  favoriteFileIds,
-  trashedFiles as mockTrash,
-  getSubfolders as mockGetSubfolders,
-  getFolder as mockGetFolder,
-  getBreadcrumb as mockGetBreadcrumb,
-  getFilesIn as mockGetFilesIn,
-  getFile as mockGetFile,
-  searchFiles as mockSearchFiles,
-} from "../data/mock.js";
+import { apiFetch, apiFetchBlob, AUTH_EVENTS } from "./ApiClient.js";
+import { API_BASE_URL, SESSION_STORAGE_KEY } from "../config.js";
 
-// ---------------------------------------------------------------------
-// Simulated network latency + occasional failure, so UI loading/error
-// states have something real to respond to during frontend-only sprints.
-// Set SIMULATE_ERRORS to true locally to test ErrorState rendering.
-// ---------------------------------------------------------------------
-const LATENCY_MS = 380;
-const SIMULATE_ERRORS = false;
-
-function resolveAfterDelay(value) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (SIMULATE_ERRORS && Math.random() < 0.15) {
-        reject(new Error("network_error"));
-      } else {
-        resolve(value);
-      }
-    }, LATENCY_MS);
-  });
+function triggerBrowserDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 /**
  * CloudService is the ONLY module allowed to know how AzarCloud's data
  * is fetched. Pages/components call these methods and never touch the
- * API, fetch(), or mock data directly.
+ * API, fetch(), or apiFetch() directly.
  *
- * PWA UI -> CloudService -> AzarCloud API -> Backend -> Storage
+ * PWA UI -> CloudService -> ApiClient -> AzarCloud Worker API -> D1 + Telegram
  *
- * When the real backend is ready, replace each method body with a
- * fetch() call to the AzarCloud API (e.g. `fetch('/api/folders/' + id)`)
- * and keep the same method signatures — no page code needs to change.
- * The frontend must never hold Telegram tokens, channel IDs, or any
- * backend secret; CloudService only speaks in File/Folder terms.
+ * The frontend never holds Telegram tokens, channel IDs, or any backend
+ * secret; CloudService only speaks in File/Folder terms, matching the
+ * existing (tested) backend contract exactly.
  */
 export const CloudService = {
   async getStorageOverview() {
-    return resolveAfterDelay({ ...mockStorage });
+    return apiFetch("/api/storage");
   },
 
   async getSubfolders(parentId = "root") {
-    const subfolders = mockGetSubfolders(parentId).map((f) => ({
-      ...f,
-      fileCount: mockGetFilesIn(f.id).length,
-    }));
-    return resolveAfterDelay(subfolders);
+    // Backend already returns fileCount per folder — no client-side calc needed.
+    return apiFetch(`/api/folders?parent=${encodeURIComponent(parentId)}`);
   },
 
   async getFolder(id) {
-    return resolveAfterDelay(mockGetFolder(id));
+    return apiFetch(`/api/folders/${encodeURIComponent(id)}`);
   },
 
   async getBreadcrumb(id) {
-    return resolveAfterDelay(mockGetBreadcrumb(id));
+    return apiFetch(`/api/folders/${encodeURIComponent(id)}/breadcrumb`);
   },
 
   async getFiles(folderId = "root") {
-    return resolveAfterDelay(mockGetFilesIn(folderId));
+    return apiFetch(`/api/files?folder=${encodeURIComponent(folderId)}`);
   },
 
   async getFile(id) {
-    return resolveAfterDelay(mockGetFile(id));
+    return apiFetch(`/api/files/${encodeURIComponent(id)}`);
   },
 
   async searchFiles(query) {
-    return resolveAfterDelay(mockSearchFiles(query));
+    return apiFetch(`/api/search?q=${encodeURIComponent(query)}`);
   },
 
   async getFavorites() {
-    return resolveAfterDelay(favoriteFileIds.map(mockGetFile).filter(Boolean));
+    return apiFetch("/api/favorites");
+  },
+
+  async addFavorite(id) {
+    await apiFetch(`/api/files/${encodeURIComponent(id)}/favorite`, { method: "POST" });
+    return { id, favorite: true };
+  },
+
+  async removeFavorite(id) {
+    await apiFetch(`/api/files/${encodeURIComponent(id)}/favorite`, { method: "DELETE" });
+    return { id, favorite: false };
   },
 
   async getTrash() {
-    return resolveAfterDelay([...mockTrash]);
+    return apiFetch("/api/trash");
   },
 
-  async uploadFile(file, { onProgress } = {}) {
-    // Simulated chunked progress. Real implementation should POST to
-    // the AzarCloud API (multipart or resumable upload) and forward
-    // progress events from the underlying XHR/fetch stream.
-    return new Promise((resolve) => {
-      let progress = 0;
-      const timer = setInterval(() => {
-        progress = Math.min(1, progress + 0.12);
-        onProgress?.(progress);
-        if (progress >= 1) {
-          clearInterval(timer);
-          resolve({ id: `f_${Date.now()}`, name: file?.name || "New file", status: "completed" });
+  async uploadFile(file, { folderId = "root", onProgress } = {}) {
+    // Uses XHR (not fetch) so we can report real upload progress, which
+    // fetch() cannot do for request bodies. Content-Type is left for the
+    // browser to set (with the multipart boundary) — never set manually.
+    const token = localStorage.getItem(SESSION_STORAGE_KEY);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folderId", folderId);
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `${API_BASE_URL}/api/upload`);
+      if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) onProgress?.(e.loaded / e.total);
+      };
+
+      xhr.onload = () => {
+        let body = null;
+        try {
+          body = JSON.parse(xhr.responseText);
+        } catch {
+          // ignore
         }
-      }, 400);
+
+        if (xhr.status === 401) {
+          localStorage.removeItem(SESSION_STORAGE_KEY);
+          window.dispatchEvent(new CustomEvent(AUTH_EVENTS.UNAUTHORIZED));
+          reject({ code: "unauthorized", message: "Authentication required" });
+          return;
+        }
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          onProgress?.(1);
+          resolve(body);
+        } else {
+          reject(body?.error || { code: "internal_error", message: "Upload failed" });
+        }
+      };
+
+      xhr.onerror = () => reject({ code: "network_error", message: "Couldn't reach AzarCloud" });
+
+      xhr.send(formData);
     });
   },
 
   async downloadFile(id) {
-    return resolveAfterDelay({ id, url: `#download-${id}` });
+    const { blob, filename } = await apiFetchBlob(`/api/files/${encodeURIComponent(id)}/download`);
+    triggerBrowserDownload(blob, filename);
+    return { id, downloaded: true };
   },
 
   async deleteFile(id) {
-    return resolveAfterDelay({ id, deleted: true });
+    await apiFetch(`/api/files/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return { id, deleted: true };
   },
 
   async renameFile(id, newName) {
-    return resolveAfterDelay({ id, name: newName });
+    return apiFetch(`/api/files/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: { name: newName },
+    });
   },
 
   async moveFile(id, targetFolderId) {
-    return resolveAfterDelay({ id, folderId: targetFolderId });
+    return apiFetch(`/api/files/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: { folderId: targetFolderId },
+    });
   },
 
   async createFolder(name, parentId = "root") {
-    return resolveAfterDelay({ id: `folder_${Date.now()}`, name, parentId });
+    return apiFetch("/api/folders", {
+      method: "POST",
+      body: { name, parentId },
+    });
   },
 
   async deleteFolder(id) {
-    return resolveAfterDelay({ id, deleted: true });
+    await apiFetch(`/api/folders/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return { id, deleted: true };
   },
 
   async restoreFile(id) {
-    return resolveAfterDelay({ id, restored: true });
+    await apiFetch(`/api/trash/${encodeURIComponent(id)}/restore`, { method: "POST" });
+    return { id, restored: true };
   },
 
   async purgeFile(id) {
-    return resolveAfterDelay({ id, purged: true });
+    await apiFetch(`/api/trash/${encodeURIComponent(id)}`, { method: "DELETE" });
+    return { id, purged: true };
   },
 };

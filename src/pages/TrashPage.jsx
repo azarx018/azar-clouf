@@ -4,6 +4,7 @@ import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, useSnackbar } f
 import { iconForType } from "../utils/fileIcons.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./TrashPage.css";
 
 export default function TrashPage() {
@@ -17,19 +18,28 @@ export default function TrashPage() {
     if (data) setItems(data);
   }, [data]);
 
-  if (error) return <ErrorState onRetry={reload} />;
+  if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
 
   const restore = async (file) => {
-    await CloudService.restoreFile(file.id);
-    setItems((prev) => prev.filter((f) => f.id !== file.id));
-    showSnackbar(`"${file.name}" restored to My Cloud`);
+    try {
+      await CloudService.restoreFile(file.id);
+      setItems((prev) => prev.filter((f) => f.id !== file.id));
+      showSnackbar(`"${file.name}" restored to My Cloud`);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
   };
 
   const confirmPurge = async () => {
-    await CloudService.purgeFile(purgeTarget.id);
-    setItems((prev) => prev.filter((f) => f.id !== purgeTarget.id));
-    showSnackbar(`"${purgeTarget.name}" permanently deleted`);
+    const target = purgeTarget;
     setPurgeTarget(null);
+    try {
+      await CloudService.purgeFile(target.id);
+      setItems((prev) => prev.filter((f) => f.id !== target.id));
+      showSnackbar(`"${target.name}" permanently deleted`);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
   };
 
   if (loading || items === null) {

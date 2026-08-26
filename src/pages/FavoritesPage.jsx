@@ -1,18 +1,23 @@
 import React from "react";
 import { Card, ActionSheet, Dialog, Button, EmptyState, ErrorState, Skeleton } from "../components/index.js";
+import { FAVORITES_PAGE_ACTIONS } from "../components/ActionSheet.jsx";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./FavoritesPage.css";
 
 export default function FavoritesPage() {
   const { navigate } = useRouter();
   const { data: files, loading, error, reload } = useAsync(() => CloudService.getFavorites(), []);
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions();
+  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+    onDeleted: reload,
+    onFavoriteChanged: reload,
+  });
 
-  if (error) return <ErrorState onRetry={reload} />;
+  if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
 
   if (loading) {
     return (
@@ -29,7 +34,7 @@ export default function FavoritesPage() {
   }
 
   if (files.length === 0) {
-    return <EmptyState title="No favorites yet" description="Star files to find them here quickly." />;
+    return <EmptyState title="No favorite files" description="Star files to find them here quickly." />;
   }
 
   return (
@@ -41,7 +46,7 @@ export default function FavoritesPage() {
         ))}
       </Card>
 
-      <ActionSheet open={!!menuFile} fileName={menuFile?.name} onClose={closeMenu} onAction={handleAction} />
+      <ActionSheet open={!!menuFile} fileName={menuFile?.name} onClose={closeMenu} onAction={handleAction} actions={FAVORITES_PAGE_ACTIONS} />
       <Dialog
         open={!!deleteTarget}
         title={deleteTarget ? `Delete "${deleteTarget.name}"?` : ""}

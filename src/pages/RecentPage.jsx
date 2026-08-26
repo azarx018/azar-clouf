@@ -5,14 +5,18 @@ import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./RecentPage.css";
 
 export default function RecentPage() {
   const { navigate } = useRouter();
   const { data: files, loading, error, reload } = useAsync(() => CloudService.getFiles("root"), []);
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions();
+  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+    onDeleted: reload,
+    onFavoriteChanged: reload,
+  });
 
-  if (error) return <ErrorState onRetry={reload} />;
+  if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
 
   return (
     <div className="recent-page">

@@ -1,24 +1,36 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Card, SearchInput, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton } from "../components/index.js";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
+import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import "./SearchPage.css";
 
 const TYPE_FILTERS = ["all", "zip", "apk", "pdf", "doc"];
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const { navigate } = useRouter();
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions();
+
+  // Debounce so we don't hit GET /api/search on every keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 350);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const { data: allResults, loading, error, reload } = useAsync(
-    () => (query ? CloudService.searchFiles(query) : Promise.resolve([])),
-    [query]
+    () => (debouncedQuery ? CloudService.searchFiles(debouncedQuery) : Promise.resolve([])),
+    [debouncedQuery]
   );
+
+  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+    onDeleted: reload,
+    onFavoriteChanged: reload,
+  });
 
   const results = (allResults || []).filter((f) => typeFilter === "all" || f.type === typeFilter);
 
@@ -44,7 +56,7 @@ export default function SearchPage() {
         <EmptyState title="Search your cloud" description="Find files by name, type, or folder." />
       )}
 
-      {query && error && <ErrorState onRetry={reload} />}
+      {query && error && <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />}
 
       {query && !error && loading && (
         <Card className="file-list">
