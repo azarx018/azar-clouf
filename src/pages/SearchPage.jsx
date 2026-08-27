@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Card, SearchInput, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton } from "../components/index.js";
+import { Card, SearchInput, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog } from "../components/index.js";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
@@ -27,9 +27,15 @@ export default function SearchPage() {
     [debouncedQuery]
   );
 
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+  const {
+    menuFile, openMenu, closeMenu, handleAction,
+    deleteTarget, confirmDelete, cancelDelete,
+    renameTarget, submitRename, cancelRename,
+    moveTarget, submitMove, cancelMove,
+  } = useFileActions({
     onDeleted: reload,
     onFavoriteChanged: reload,
+    onChanged: reload,
   });
 
   const results = (allResults || []).filter((f) => typeFilter === "all" || f.type === typeFilter);
@@ -98,6 +104,8 @@ export default function SearchPage() {
         <Button variant="secondary" onClick={cancelDelete}>Cancel</Button>
         <Button variant="danger" onClick={confirmDelete}>Delete</Button>
       </Dialog>
+      <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
+      <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
     </div>
   );
 }

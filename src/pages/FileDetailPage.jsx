@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Download, Edit2, FolderInput, Share2, Star, Trash2 } from "lucide-react";
-import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, useSnackbar } from "../components/index.js";
+import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog, useSnackbar } from "../components/index.js";
 import { iconForType } from "../utils/fileIcons.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { usePageTitle } from "../pageTitle.jsx";
@@ -13,6 +13,8 @@ export default function FileDetailPage({ params }) {
   const { navigate } = useRouter();
   const { showSnackbar } = useSnackbar();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [moveOpen, setMoveOpen] = useState(false);
   const { data: file, loading, error, reload } = useAsync(() => CloudService.getFile(params.id), [params.id]);
 
   usePageTitle(file?.name);
@@ -62,13 +64,24 @@ export default function FileDetailPage({ params }) {
         }
         break;
       case "rename":
-        showSnackbar(`Rename ${file.name} — coming soon`);
+        setRenameOpen(true);
         break;
       case "move":
-        showSnackbar(`Move ${file.name} — coming soon`);
+        setMoveOpen(true);
         break;
       case "share":
-        showSnackbar(`Share link copied for ${file.name}`);
+        try {
+          const result = await CloudService.shareFile(file.id);
+          if (result.cancelled) {
+            // person closed the OS share sheet — no message needed
+          } else if (result.shared) {
+            showSnackbar(`Shared ${file.name}`);
+          } else {
+            showSnackbar(`Sharing isn't supported here — downloaded ${file.name} instead`);
+          }
+        } catch (err) {
+          showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+        }
         break;
       default:
         break;
@@ -81,6 +94,28 @@ export default function FileDetailPage({ params }) {
       await CloudService.deleteFile(file.id);
       showSnackbar(`"${file.name}" moved to Trash`);
       navigate(backTo);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
+  };
+
+  const submitRename = async (newName) => {
+    setRenameOpen(false);
+    try {
+      await CloudService.renameFile(file.id, newName);
+      showSnackbar(`Renamed to "${newName}"`);
+      reload();
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
+  };
+
+  const submitMove = async (targetFolderId) => {
+    setMoveOpen(false);
+    try {
+      await CloudService.moveFile(file.id, targetFolderId);
+      showSnackbar(`Moved "${file.name}"`);
+      reload();
     } catch (err) {
       showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
     }
@@ -124,6 +159,9 @@ export default function FileDetailPage({ params }) {
         <Button variant="secondary" onClick={() => setDeleteOpen(false)}>Cancel</Button>
         <Button variant="danger" onClick={confirmDelete}>Delete</Button>
       </Dialog>
+
+      <RenameDialog target={renameOpen ? file : null} onCancel={() => setRenameOpen(false)} onSubmit={submitRename} />
+      <MoveDialog target={moveOpen ? file : null} onCancel={() => setMoveOpen(false)} onSubmit={submitMove} />
     </div>
   );
 }

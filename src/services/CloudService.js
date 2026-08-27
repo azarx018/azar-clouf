@@ -125,6 +125,33 @@ export const CloudService = {
     return { id, downloaded: true };
   },
 
+  /**
+   * There is no /share endpoint on the backend (worker.js has no link-
+   * sharing route), so this can't produce a shareable URL. Instead it
+   * fetches the actual file and hands it to the OS share sheet via the
+   * Web Share API — a real share, not a fake snackbar, with no backend
+   * changes required. Falls back to a plain download where the browser
+   * doesn't support sharing files (mainly desktop browsers).
+   */
+  async shareFile(id) {
+    const { blob, filename } = await apiFetchBlob(`/api/files/${encodeURIComponent(id)}/download`);
+    const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
+
+    if (typeof navigator !== "undefined" && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return { id, shared: true };
+      } catch (err) {
+        // AbortError = person closed the share sheet — not a real failure.
+        if (err?.name === "AbortError") return { id, shared: false, cancelled: true };
+        throw err;
+      }
+    }
+
+    triggerBrowserDownload(blob, filename);
+    return { id, shared: false, downloaded: true };
+  },
+
   async deleteFile(id) {
     await apiFetch(`/api/files/${encodeURIComponent(id)}`, { method: "DELETE" });
     return { id, deleted: true };

@@ -8,7 +8,11 @@
 .storage-card__ring-value {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
+  line-height: 1.1;
+  max-width: 64px;
+  text-align: center;
+  word-break: break-word;
 }
 
 .storage-card__ring-label {
@@ -31,40 +35,4 @@
 
 .my-cloud__section {
   margin-bottom: var(--space-6);
-}
-
-.fab {
-  position: fixed;
-  right: var(--space-4);
-  bottom: calc(var(--bottom-nav-height) + var(--space-4) + env(safe-area-inset-bottom));
-  width: 56px;
-  height: 56px;
-  border-radius: var(--radius-full);
-  border: none;
-  background: var(--horizon);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
-  z-index: 30;
-  transition: transform 150ms var(--ease);
-}
-
-.fab:active {
-  transform: scale(0.94);
-}
-
-@media (min-width: 768px) {
-  .fab {
-    bottom: var(--space-5);
-  }
-}
-
-.upload-sheet__options {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
 }

@@ -15,6 +15,8 @@ const DEFAULT_ACTIONS = [
 export const FAVORITES_PAGE_ACTIONS = [
   { key: "download", label: "Download", icon: Download },
   { key: "unfavorite", label: "Remove from Favorites", icon: Star },
+  { key: "rename", label: "Rename", icon: Edit2 },
+  { key: "move", label: "Move", icon: FolderInput },
   { key: "share", label: "Share", icon: Share2 },
   { key: "info", label: "Get info", icon: Info },
   { key: "delete", label: "Delete", icon: Trash2, danger: true },

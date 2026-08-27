@@ -3,6 +3,7 @@ import { X, RotateCcw, Check, AlertCircle } from "lucide-react";
 import { Card, AtmosphereRing, EmptyState } from "../components/index.js";
 import { useUploadQueue } from "../upload/UploadContext.jsx";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
+import { formatBytes } from "../utils/formatBytes.js";
 import "./UploadPage.css";
 
 const STATUS_LABEL = {
@@ -11,14 +12,6 @@ const STATUS_LABEL = {
   failed: "Upload failed",
   cancelled: "Cancelled",
 };
-
-function formatSize(bytes) {
-  if (!bytes && bytes !== 0) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-  return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
-}
 
 export default function UploadPage() {
   const { queue, cancelItem, retryItem } = useUploadQueue();
@@ -56,7 +49,7 @@ export default function UploadPage() {
                   ? getFriendlyErrorMessage(file.error)
                   : STATUS_LABEL[file.status]}
                 {" · "}
-                {formatSize(file.size)}
+                {formatBytes(file.size)}
               </div>
             </div>
             {file.status === "uploading" && (

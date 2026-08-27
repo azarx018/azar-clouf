@@ -15,8 +15,10 @@ import UploadPage from "./pages/UploadPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
-import { IconButton, OfflineBanner, ActionSheet, ErrorState, useSnackbar } from "./components/index.js";
+import { IconButton, OfflineBanner, ActionSheet, ErrorState, Dialog, Button, Input, useSnackbar } from "./components/index.js";
 import { getFriendlyErrorMessage } from "./services/errorMessages.js";
+import { CloudService } from "./services/CloudService.js";
+import { emitDataChanged } from "./refreshBus.js";
 import "./App.css";
 
 const NAV_ITEMS = [
@@ -87,6 +89,9 @@ function CloudShell() {
   const dynamicTitle = usePageTitleValue();
   const isRoot = path === "/";
   const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const [newFolderOpen, setNewFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
   const { showSnackbar } = useSnackbar();
 
   // If we just logged in while sitting on /login or /register, hop back to My Cloud.
@@ -96,6 +101,11 @@ function CloudShell() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "New folder" is created inside whichever folder the person is currently
+  // viewing — root, unless the URL is /folder/:id.
+  const currentFolderMatch = path.match(/^\/folder\/(.+)$/);
+  const currentParentId = currentFolderMatch ? currentFolderMatch[1] : "root";
 
   const moreActions = [
     { key: "new-folder", label: "New folder", icon: FolderPlus },
@@ -107,7 +117,24 @@ function CloudShell() {
     if (key === "refresh") {
       window.location.reload();
     } else if (key === "new-folder") {
-      showSnackbar("New folder — coming soon");
+      setNewFolderName("");
+      setNewFolderOpen(true);
+    }
+  };
+
+  const submitNewFolder = async () => {
+    const name = newFolderName.trim();
+    if (!name) return;
+    setCreatingFolder(true);
+    try {
+      await CloudService.createFolder(name, currentParentId);
+      showSnackbar(`Folder "${name}" created`);
+      setNewFolderOpen(false);
+      emitDataChanged();
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    } finally {
+      setCreatingFolder(false);
     }
   };
 
@@ -201,6 +228,18 @@ function CloudShell() {
         onAction={handleMoreAction}
         actions={moreActions}
       />
+
+      <Dialog open={newFolderOpen} title="New folder" onClose={() => setNewFolderOpen(false)}>
+        <div className="prompt-dialog__content">
+          <Input value={newFolderName} onChange={setNewFolderName} placeholder="Folder name" />
+          <div className="prompt-dialog__buttons">
+            <Button variant="secondary" onClick={() => setNewFolderOpen(false)} disabled={creatingFolder}>Cancel</Button>
+            <Button onClick={submitNewFolder} disabled={creatingFolder || !newFolderName.trim()}>
+              {creatingFolder ? "Creating..." : "Create"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }

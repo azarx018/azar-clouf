@@ -4,16 +4,19 @@ import { CloudService } from "../services/CloudService.js";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 
 /**
- * Wires up the file "..." menu (ActionSheet) and the delete confirmation
- * dialog so every page (My Cloud, Folder, Recent, Search, Favorites,
- * Trash) handles file actions the same way, backed by the real API.
+ * Wires up the file "..." menu (ActionSheet), the delete confirmation
+ * dialog, the rename dialog, and the move dialog so every page (My Cloud,
+ * Folder, Recent, Search, Favorites, Trash) handles file actions the same
+ * way, backed by the real API.
  *
- * onDeleted / onFavoriteChanged let a page refresh its own file list
- * after a mutation (e.g. re-run the current CloudService query).
+ * onDeleted / onFavoriteChanged / onChanged let a page refresh its own
+ * file list after a mutation (e.g. re-run the current CloudService query).
  */
-export function useFileActions({ onDeleted, onFavoriteChanged } = {}) {
+export function useFileActions({ onDeleted, onFavoriteChanged, onChanged } = {}) {
   const [menuFile, setMenuFile] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [renameTarget, setRenameTarget] = useState(null);
+  const [moveTarget, setMoveTarget] = useState(null);
   const { showSnackbar } = useSnackbar();
 
   const openMenu = useCallback((file) => setMenuFile(file), []);
@@ -34,13 +37,24 @@ export function useFileActions({ onDeleted, onFavoriteChanged } = {}) {
         }
         break;
       case "rename":
-        showSnackbar(`Rename ${file.name} — coming soon`);
+        setRenameTarget(file);
         break;
       case "move":
-        showSnackbar(`Move ${file.name} — coming soon`);
+        setMoveTarget(file);
         break;
       case "share":
-        showSnackbar(`Share link copied for ${file.name}`);
+        try {
+          const result = await CloudService.shareFile(file.id);
+          if (result.cancelled) {
+            // person closed the OS share sheet — no message needed
+          } else if (result.shared) {
+            showSnackbar(`Shared ${file.name}`);
+          } else {
+            showSnackbar(`Sharing isn't supported here — downloaded ${file.name} instead`);
+          }
+        } catch (err) {
+          showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+        }
         break;
       case "favorite":
         try {
@@ -86,5 +100,40 @@ export function useFileActions({ onDeleted, onFavoriteChanged } = {}) {
 
   const cancelDelete = useCallback(() => setDeleteTarget(null), []);
 
-  return { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete };
+  const submitRename = useCallback(async (newName) => {
+    const target = renameTarget;
+    setRenameTarget(null);
+    if (!target) return;
+    try {
+      await CloudService.renameFile(target.id, newName);
+      showSnackbar(`Renamed to "${newName}"`);
+      onChanged?.(target);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
+  }, [renameTarget, onChanged, showSnackbar]);
+
+  const cancelRename = useCallback(() => setRenameTarget(null), []);
+
+  const submitMove = useCallback(async (targetFolderId) => {
+    const target = moveTarget;
+    setMoveTarget(null);
+    if (!target) return;
+    try {
+      await CloudService.moveFile(target.id, targetFolderId);
+      showSnackbar(`Moved "${target.name}"`);
+      onChanged?.(target);
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    }
+  }, [moveTarget, onChanged, showSnackbar]);
+
+  const cancelMove = useCallback(() => setMoveTarget(null), []);
+
+  return {
+    menuFile, openMenu, closeMenu, handleAction,
+    deleteTarget, confirmDelete, cancelDelete,
+    renameTarget, submitRename, cancelRename,
+    moveTarget, submitMove, cancelMove,
+  };
 }

@@ -1,4 +1,8 @@
-const CACHE_NAME = "azarcloud-shell-v1";
+// Bump APP_VERSION on every deploy (keep in sync with package.json).
+// This changes CACHE_NAME, which makes `activate` below wipe out every
+// old cache — the #1 reason people get stuck seeing an old build.
+const APP_VERSION = "1.0.2";
+const CACHE_NAME = `azarcloud-shell-v${APP_VERSION}`;
 const SHELL_ASSETS = ["/", "/index.html", "/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -17,19 +21,35 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Network-first for navigation/API, cache-first for the static app shell.
+// Network-first for EVERYTHING. A stale cache should never win over a
+// reachable network — that's what caused old builds to stick around.
+// Cache is only a fallback for when the network request actually fails
+// (i.e. genuinely offline), and only successful GET responses get cached.
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
 
-  if (request.mode === "navigate") {
-    event.respondWith(
-      fetch(request).catch(() => caches.match("/index.html"))
-    );
-    return;
-  }
-
   event.respondWith(
-    caches.match(request).then((cached) => cached || fetch(request))
+    fetch(request)
+      .then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        return response;
+      })
+      .catch(() =>
+        caches.match(request).then((cached) => {
+          if (cached) return cached;
+          if (request.mode === "navigate") return caches.match("/index.html");
+          return Response.error();
+        })
+      )
   );
+});
+
+// Let the page ask this SW to take over immediately (used by the
+// "Force update" button in Settings, and for future update prompts).
+self.addEventListener("message", (event) => {
+  if (event.data === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });

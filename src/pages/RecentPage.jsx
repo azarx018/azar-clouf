@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, ActionSheet, Dialog, Button, EmptyState, ErrorState, Skeleton } from "../components/index.js";
+import { Card, ActionSheet, Dialog, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog } from "../components/index.js";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
 import { useAsync } from "../hooks/useAsync.js";
@@ -11,9 +11,15 @@ import "./RecentPage.css";
 export default function RecentPage() {
   const { navigate } = useRouter();
   const { data: files, loading, error, reload } = useAsync(() => CloudService.getFiles("root"), []);
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+  const {
+    menuFile, openMenu, closeMenu, handleAction,
+    deleteTarget, confirmDelete, cancelDelete,
+    renameTarget, submitRename, cancelRename,
+    moveTarget, submitMove, cancelMove,
+  } = useFileActions({
     onDeleted: reload,
     onFavoriteChanged: reload,
+    onChanged: reload,
   });
 
   if (error) return <ErrorState description={getFriendlyErrorMessage(error)} onRetry={reload} />;
@@ -50,6 +56,8 @@ export default function RecentPage() {
         <Button variant="secondary" onClick={cancelDelete}>Cancel</Button>
         <Button variant="danger" onClick={confirmDelete}>Delete</Button>
       </Dialog>
+      <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
+      <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
     </div>
   );
 }

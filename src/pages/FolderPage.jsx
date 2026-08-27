@@ -1,6 +1,6 @@
-import React from "react";
-import { ChevronRight } from "lucide-react";
-import { Card, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton } from "../components/index.js";
+import React, { useEffect, useRef, useState } from "react";
+import { ChevronRight, Plus, Upload } from "lucide-react";
+import { Card, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog } from "../components/index.js";
 import FolderCard from "../components/FolderCard.jsx";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
@@ -9,10 +9,15 @@ import { usePageTitle } from "../pageTitle.jsx";
 import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
+import { useUploadQueue } from "../upload/UploadContext.jsx";
+import { onDataChanged } from "../refreshBus.js";
 import "./FolderPage.css";
 
 export default function FolderPage({ params }) {
   const { navigate } = useRouter();
+  const { enqueueFiles } = useUploadQueue();
+  const fileInputRef = useRef(null);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const { data, loading, error, reload } = useAsync(async () => {
     const [folder, subfolders, files, breadcrumb] = await Promise.all([
@@ -24,9 +29,17 @@ export default function FolderPage({ params }) {
     return { folder, subfolders, files, breadcrumb };
   }, [params.id]);
 
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+  useEffect(() => onDataChanged(reload), [reload]);
+
+  const {
+    menuFile, openMenu, closeMenu, handleAction,
+    deleteTarget, confirmDelete, cancelDelete,
+    renameTarget, submitRename, cancelRename,
+    moveTarget, submitMove, cancelMove,
+  } = useFileActions({
     onDeleted: reload,
     onFavoriteChanged: reload,
+    onChanged: reload,
   });
 
   usePageTitle(data?.folder?.name);
@@ -61,6 +74,15 @@ export default function FolderPage({ params }) {
   }
 
   const isEmpty = subfolders.length === 0 && files.length === 0;
+
+  const handleFilesPicked = (e) => {
+    const picked = e.target.files;
+    if (picked && picked.length > 0) {
+      enqueueFiles(picked, folder.id);
+      navigate("/upload");
+    }
+    e.target.value = "";
+  };
 
   return (
     <div className="folder-page">
@@ -117,6 +139,20 @@ export default function FolderPage({ params }) {
         </section>
       )}
 
+      <button className="fab" onClick={() => setUploadOpen(true)} aria-label={`Add to ${folder.name}`}>
+        <Plus size={24} />
+      </button>
+
+      <input ref={fileInputRef} type="file" multiple hidden onChange={handleFilesPicked} />
+
+      <Dialog open={uploadOpen} title={`Add to "${folder.name}"`} onClose={() => setUploadOpen(false)}>
+        <div className="upload-sheet__options">
+          <Button variant="secondary" icon={Upload} onClick={() => { setUploadOpen(false); fileInputRef.current?.click(); }}>
+            Upload files
+          </Button>
+        </div>
+      </Dialog>
+
       <ActionSheet open={!!menuFile} fileName={menuFile?.name} onClose={closeMenu} onAction={handleAction} />
 
       <Dialog
@@ -128,6 +164,9 @@ export default function FolderPage({ params }) {
         <Button variant="secondary" onClick={cancelDelete}>Cancel</Button>
         <Button variant="danger" onClick={confirmDelete}>Delete</Button>
       </Dialog>
+
+      <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
+      <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Plus, Upload, FolderPlus } from "lucide-react";
-import { Card, AtmosphereRing, Dialog, ActionSheet, Button, Skeleton, ErrorState, useSnackbar } from "../components/index.js";
+import { Card, AtmosphereRing, Dialog, ActionSheet, Button, Skeleton, ErrorState, RenameDialog, MoveDialog, useSnackbar } from "../components/index.js";
 import FolderCard from "../components/FolderCard.jsx";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
@@ -9,11 +9,9 @@ import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
 import { useUploadQueue } from "../upload/UploadContext.jsx";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
+import { formatBytes } from "../utils/formatBytes.js";
+import { onDataChanged } from "../refreshBus.js";
 import "./MyCloudPage.css";
-
-function formatGB(bytes) {
-  return (bytes / (1024 * 1024 * 1024)).toFixed(1);
-}
 
 export default function MyCloudPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -25,8 +23,24 @@ export default function MyCloudPage() {
   const foldersState = useAsync(() => CloudService.getSubfolders("root"), []);
   const filesState = useAsync(() => CloudService.getFiles("root"), []);
 
-  const { menuFile, openMenu, closeMenu, handleAction, deleteTarget, confirmDelete, cancelDelete } = useFileActions({
+  const reloadAll = () => {
+    storageState.reload();
+    foldersState.reload();
+    filesState.reload();
+  };
+
+  // A "New folder" created from the top-level menu should show up here.
+  useEffect(() => onDataChanged(reloadAll), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const {
+    menuFile, openMenu, closeMenu, handleAction,
+    deleteTarget, confirmDelete, cancelDelete,
+    renameTarget, submitRename, cancelRename,
+    moveTarget, submitMove, cancelMove,
+  } = useFileActions({
     onDeleted: () => filesState.reload(),
+    onFavoriteChanged: () => filesState.reload(),
+    onChanged: reloadAll,
   });
 
   const handleFilesPicked = (e) => {
@@ -43,11 +57,7 @@ export default function MyCloudPage() {
     return (
       <ErrorState
         description={getFriendlyErrorMessage(anyError)}
-        onRetry={() => {
-          storageState.reload();
-          foldersState.reload();
-          filesState.reload();
-        }}
+        onRetry={reloadAll}
       />
     );
   }
@@ -71,12 +81,14 @@ export default function MyCloudPage() {
         ) : (
           <>
             <AtmosphereRing value={usedRatio} size={88} stroke={7}>
-              <div className="storage-card__ring-value">{formatGB(storageState.data.usedBytes)} GB</div>
+              <div className="storage-card__ring-value">{formatBytes(storageState.data.usedBytes)}</div>
               <div className="storage-card__ring-label">used</div>
             </AtmosphereRing>
             <div className="storage-card__info">
               <div className="storage-card__heading">Cloud Storage</div>
-              <div className="storage-card__meta">{storageState.data.fileCount} files</div>
+              <div className="storage-card__meta">
+                {storageState.data.fileCount} file{storageState.data.fileCount === 1 ? "" : "s"} · {formatBytes(storageState.data.totalBytes)} total
+              </div>
             </div>
           </>
         )}
@@ -160,6 +172,9 @@ export default function MyCloudPage() {
         <Button variant="secondary" onClick={cancelDelete}>Cancel</Button>
         <Button variant="danger" onClick={confirmDelete}>Delete</Button>
       </Dialog>
+
+      <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
+      <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
     </div>
   );
 }

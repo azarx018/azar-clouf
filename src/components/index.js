@@ -11,3 +11,5 @@ export { default as EmptyState } from "./EmptyState.jsx";
 export { default as ActionSheet } from "./ActionSheet.jsx";
 export { default as ErrorState } from "./ErrorState.jsx";
 export { default as OfflineBanner } from "./OfflineBanner.jsx";
+export { default as RenameDialog } from "./RenameDialog.jsx";
+export { default as MoveDialog } from "./MoveDialog.jsx";

@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from "react";
 import { CloudService } from "../services/CloudService.js";
+import { emitDataChanged } from "../refreshBus.js";
 
 const UploadContext = createContext(null);
 
@@ -23,7 +24,11 @@ export function UploadProvider({ children }) {
         folderId: item.folderId,
         onProgress: (progress) => updateItem(item.id, { progress }),
       })
-        .then(() => updateItem(item.id, { status: "completed", progress: 1 }))
+        .then(() => {
+          updateItem(item.id, { status: "completed", progress: 1 });
+          // Let My Cloud / Folder pages know storage usage & file lists changed.
+          emitDataChanged();
+        })
         .catch((err) => updateItem(item.id, { status: "failed", error: err }));
     },
     [updateItem]

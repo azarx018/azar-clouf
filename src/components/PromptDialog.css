@@ -1,0 +1,56 @@
+.prompt-dialog__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+}
+
+.prompt-dialog__buttons {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.prompt-dialog__hint {
+  font-size: var(--text-sm);
+  color: var(--mist);
+}
+
+.prompt-dialog__hint--error {
+  color: var(--error);
+}
+
+.prompt-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.prompt-dialog__option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  color: var(--ink);
+  font-size: var(--text-md);
+  cursor: pointer;
+  text-align: left;
+}
+
+.prompt-dialog__option:hover {
+  background: var(--elevated);
+}
+
+.prompt-dialog__option.is-selected {
+  background: var(--horizon-soft);
+  color: var(--horizon);
+}
+
+.prompt-dialog__check {
+  margin-left: auto;
+}

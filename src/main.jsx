@@ -29,7 +29,16 @@ createRoot(document.getElementById("root")).render(
 );
 
 // Register service worker for the offline app shell.
+// Auto-reload ONCE when a new service worker takes control, so a fresh
+// deploy is never stuck behind an old cached build in an already-open tab.
 if ("serviceWorker" in navigator) {
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloading) return;
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("/sw.js").catch(() => {
       // Registration failures shouldn't break the app.

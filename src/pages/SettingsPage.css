@@ -39,3 +39,19 @@
 .settings-row__icon--danger {
   color: var(--error);
 }
+
+.settings-row__icon--spin {
+  animation: settings-spin 0.9s linear infinite;
+}
+
+@keyframes settings-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.settings-version {
+  text-align: center;
+  color: var(--mist);
+  font-size: var(--text-sm);
+  margin-top: var(--space-6);
+}
