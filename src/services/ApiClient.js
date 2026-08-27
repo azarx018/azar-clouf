@@ -128,37 +128,9 @@ export async function apiFetchBlob(path) {
   }
 
   const disposition = response.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : "download";
 
-let filename = null;
-
-// RFC 5987 / RFC 6266: filename*=UTF-8''...
-const filenameStar = disposition.match(/filename\*\s*=\s*(?:UTF-8'')?([^;]+)/i);
-
-if (filenameStar) {
-  try {
-    filename = decodeURIComponent(filenameStar[1].trim().replace(/^"(.*)"$/, "$1"));
-  } catch {
-    filename = filenameStar[1].trim().replace(/^"(.*)"$/, "$1");
-  }
-}
-
-// Standard filename="..."
-if (!filename) {
-  const filenameMatch = disposition.match(/filename\s*=\s*"([^"]+)"/i);
-  if (filenameMatch) {
-    filename = filenameMatch[1];
-  }
-}
-
-// Standard filename=without-quotes
-if (!filename) {
-  const filenameMatch = disposition.match(/filename\s*=\s*([^;]+)/i);
-  if (filenameMatch) {
-    filename = filenameMatch[1].trim();
-  }
-}
-
-filename = filename || "download";
   const blob = await response.blob();
   return { blob, filename };
 }
