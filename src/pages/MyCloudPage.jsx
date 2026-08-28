@@ -62,7 +62,8 @@ export default function MyCloudPage() {
     );
   }
 
-  const usedRatio = storageState.data ? storageState.data.usedBytes / storageState.data.totalBytes : 0;
+  const isUnlimited = storageState.data?.unlimited || storageState.data?.totalBytes == null;
+  const usedRatio = storageState.data && !isUnlimited ? storageState.data.usedBytes / storageState.data.totalBytes : 0;
 
   return (
     <div className="my-cloud">
@@ -87,7 +88,9 @@ export default function MyCloudPage() {
             <div className="storage-card__info">
               <div className="storage-card__heading">Cloud Storage</div>
               <div className="storage-card__meta">
-                {storageState.data.fileCount} file{storageState.data.fileCount === 1 ? "" : "s"} · {formatBytes(storageState.data.totalBytes)} total
+                {storageState.data.fileCount} file{storageState.data.fileCount === 1 ? "" : "s"}
+                {" · "}
+                {isUnlimited ? "Unlimited storage" : `${formatBytes(storageState.data.totalBytes)} total`}
               </div>
             </div>
           </>

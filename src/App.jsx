@@ -24,6 +24,8 @@ import "./App.css";
 const NAV_ITEMS = [
   { path: "/", label: "Cloud", icon: Cloud },
   { path: "/recent", label: "Recent", icon: Clock },
+  { path: "/favorites", label: "Favorites", icon: Star },
+  { path: "/trash", label: "Trash", icon: Trash2 },
   { path: "/settings", label: "Settings", icon: Settings },
 ];
 

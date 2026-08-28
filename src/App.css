@@ -103,9 +103,11 @@
   border: none;
   background: none;
   color: var(--mist);
-  font-size: 11px;
+  font-size: 10px;
+  white-space: nowrap;
   cursor: pointer;
   min-height: var(--touch-target);
+  padding: 0 2px;
 }
 
 .bottom-nav__item.is-active {

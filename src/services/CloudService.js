@@ -130,21 +130,34 @@ export const CloudService = {
    * sharing route), so this can't produce a shareable URL. Instead it
    * fetches the actual file and hands it to the OS share sheet via the
    * Web Share API — a real share, not a fake snackbar, with no backend
-   * changes required. Falls back to a plain download where the browser
-   * doesn't support sharing files (mainly desktop browsers).
+   * changes required.
+   *
+   * IMPORTANT: navigator.share() only works while the click's "user
+   * activation" is still active, which can expire during a slow network
+   * download. If that happens (or the browser/device doesn't support
+   * sharing files at all), this falls back to a plain download instead
+   * of surfacing a scary error — the file still ends up with the person
+   * either way.
    */
   async shareFile(id) {
+    const canShareFiles =
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function";
+
     const { blob, filename } = await apiFetchBlob(`/api/files/${encodeURIComponent(id)}/download`);
     const file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
 
-    if (typeof navigator !== "undefined" && navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (canShareFiles && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: filename });
         return { id, shared: true };
       } catch (err) {
-        // AbortError = person closed the share sheet — not a real failure.
+        // AbortError = person closed the share sheet on purpose.
         if (err?.name === "AbortError") return { id, shared: false, cancelled: true };
-        throw err;
+        // Anything else (most commonly a lost user-activation window on a
+        // slow connection) — fall through to a plain download below
+        // rather than showing an error for something that isn't fatal.
       }
     }
 
