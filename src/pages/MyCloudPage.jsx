@@ -148,7 +148,7 @@ export default function MyCloudPage() {
               No files yet.
             </div>
           ) : (
-            filesState.data.map((file) => (
+            filesState.data.slice(0, 10).map((file) => (
               <FileRow
                 key={file.id}
                 file={file}
