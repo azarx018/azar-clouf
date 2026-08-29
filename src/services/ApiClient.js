@@ -39,8 +39,15 @@ async function parseErrorBody(response) {
     if (body?.error?.code) {
       return new ApiError(body.error.code, body.error.message, response.status);
     }
+    // The response WAS valid JSON but didn't match the expected
+    // { error: { code, message } } shape — log it so a future report
+    // of "Something went wrong" can be traced back to what actually
+    // came back from the server, instead of just a generic fallback.
+    console.error("Unexpected API error shape:", response.status, body);
   } catch {
-    // response wasn't JSON — fall through to a generic error
+    // Response wasn't JSON at all (e.g. an upstream gateway/edge error
+    // page instead of the Worker's own JSON response).
+    console.error("Non-JSON API error response:", response.status, response.statusText);
   }
   return new ApiError("internal_error", "An internal server error occurred", response.status);
 }

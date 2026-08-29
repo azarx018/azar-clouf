@@ -45,6 +45,13 @@ export const CloudService = {
     return apiFetch(`/api/files?folder=${encodeURIComponent(folderId)}`);
   },
 
+  // Recently uploaded files across ALL folders, not just root — a
+  // dedicated backend endpoint since getFiles is intentionally scoped
+  // to a single folder.
+  async getRecentFiles() {
+    return apiFetch("/api/files/recent");
+  },
+
   async getFile(id) {
     return apiFetch(`/api/files/${encodeURIComponent(id)}`);
   },

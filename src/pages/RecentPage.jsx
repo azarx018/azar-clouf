@@ -10,7 +10,7 @@ import "./RecentPage.css";
 
 export default function RecentPage() {
   const { navigate } = useRouter();
-  const { data: files, loading, error, reload } = useAsync(() => CloudService.getFiles("root"), []);
+  const { data: files, loading, error, reload } = useAsync(() => CloudService.getRecentFiles(), []);
   const {
     menuFile, openMenu, closeMenu, handleAction,
     deleteTarget, confirmDelete, cancelDelete,
@@ -41,7 +41,7 @@ export default function RecentPage() {
       ) : (
         <Card className="file-list">
           {files.map((file) => (
-            <FileRow key={file.id} file={file} onOpen={(f) => navigate(`/file/${f.id}`)} onMenu={openMenu} />
+            <FileRow key={file.id} file={file} metaExtra={file.folderName} onOpen={(f) => navigate(`/file/${f.id}`)} onMenu={openMenu} />
           ))}
         </Card>
       )}
