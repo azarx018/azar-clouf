@@ -24,7 +24,7 @@ export default function MyCloudPage() {
 
   const storageState = useAsync(() => CloudService.getStorageOverview(), []);
   const foldersState = useAsync(() => CloudService.getSubfolders("root"), []);
-  const filesState = useAsync(() => CloudService.getFiles("root"), []);
+  const filesState = useAsync(() => CloudService.getRecentFiles(), []);
 
   const reloadAll = () => {
     storageState.reload();
@@ -152,6 +152,7 @@ export default function MyCloudPage() {
               <FileRow
                 key={file.id}
                 file={file}
+                metaExtra={file.folderName}
                 onOpen={(f) => navigate(`/file/${f.id}`)}
                 onMenu={openMenu}
               />
