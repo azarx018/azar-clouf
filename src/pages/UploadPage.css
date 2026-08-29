@@ -61,3 +61,7 @@
   cursor: pointer;
   flex-shrink: 0;
 }
+
+.upload-item__action:active {
+  background: var(--divider);
+}

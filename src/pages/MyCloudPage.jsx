@@ -15,9 +15,12 @@ import "./MyCloudPage.css";
 
 export default function MyCloudPage() {
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState(null);
+  const [deletingFolder, setDeletingFolder] = useState(false);
   const { navigate } = useRouter();
   const { enqueueFiles } = useUploadQueue();
   const fileInputRef = useRef(null);
+  const { showSnackbar } = useSnackbar();
 
   const storageState = useAsync(() => CloudService.getStorageOverview(), []);
   const foldersState = useAsync(() => CloudService.getSubfolders("root"), []);
@@ -42,6 +45,21 @@ export default function MyCloudPage() {
     onFavoriteChanged: () => filesState.reload(),
     onChanged: reloadAll,
   });
+
+  const confirmDeleteFolder = async () => {
+    const target = deleteFolderTarget;
+    setDeletingFolder(true);
+    try {
+      await CloudService.deleteFolder(target.id);
+      showSnackbar(`"${target.name}" deleted — its files moved back to My Cloud`);
+      setDeleteFolderTarget(null);
+      reloadAll();
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    } finally {
+      setDeletingFolder(false);
+    }
+  };
 
   const handleFilesPicked = (e) => {
     const files = e.target.files;
@@ -110,6 +128,7 @@ export default function MyCloudPage() {
                   folder={f}
                   fileCount={f.fileCount}
                   onOpen={(folder) => navigate(`/folder/${folder.id}`)}
+                  onMenu={(folder) => setDeleteFolderTarget(folder)}
                 />
               ))}
         </div>
@@ -178,6 +197,18 @@ export default function MyCloudPage() {
 
       <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
       <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
+
+      <Dialog
+        open={!!deleteFolderTarget}
+        title={deleteFolderTarget ? `Delete "${deleteFolderTarget.name}"?` : ""}
+        description="The folder will be deleted. Files inside it move back to My Cloud — nothing gets deleted."
+        onClose={() => setDeleteFolderTarget(null)}
+      >
+        <Button variant="secondary" onClick={() => setDeleteFolderTarget(null)} disabled={deletingFolder}>Cancel</Button>
+        <Button variant="danger" onClick={confirmDeleteFolder} disabled={deletingFolder}>
+          {deletingFolder ? "Deleting..." : "Delete folder"}
+        </Button>
+      </Dialog>
     </div>
   );
 }

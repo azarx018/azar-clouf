@@ -6,6 +6,11 @@
   border-bottom: 1px solid var(--divider);
   cursor: pointer;
   min-height: var(--touch-target);
+  transition: background var(--duration) var(--ease);
+}
+
+.file-row:active {
+  background: var(--elevated);
 }
 
 .file-row:last-child {
@@ -54,5 +59,10 @@
   width: var(--touch-target);
   height: var(--touch-target);
   flex-shrink: 0;
+  border-radius: var(--radius-full);
   cursor: pointer;
+}
+
+.file-row__menu:active {
+  background: var(--divider);
 }

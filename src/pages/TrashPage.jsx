@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { RotateCcw, Trash2 } from "lucide-react";
-import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, useSnackbar } from "../components/index.js";
-import { iconForType } from "../utils/fileIcons.js";
+import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, Thumbnail, useSnackbar } from "../components/index.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { CloudService } from "../services/CloudService.js";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
@@ -65,10 +64,9 @@ export default function TrashPage() {
       <div className="trash-page__note">Items are permanently deleted after 30 days.</div>
       <Card className="file-list">
         {items.map((file) => {
-          const Icon = iconForType(file.type);
           return (
             <div key={file.id} className="trash-row">
-              <div className="trash-row__icon"><Icon size={17} /></div>
+              <Thumbnail file={file} size={38} />
               <div className="trash-row__body">
                 <div className="trash-row__name">{file.name}</div>
                 <div className="trash-row__meta">{file.type.toUpperCase()} · {file.size} · Deleted {file.deleted}</div>

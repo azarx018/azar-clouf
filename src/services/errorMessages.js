@@ -12,6 +12,7 @@ const FRIENDLY_MESSAGES = {
   already_exists: "An item with this name already exists.",
   file_too_large: "This file is too large.",
   storage_unavailable: "Storage is temporarily unavailable.",
+  telegram_unavailable: "Storage is temporarily unavailable.",
   database_error: "Something went wrong. Please try again.",
   internal_error: "Something went wrong. Please try again.",
   network_error: "Couldn't reach AzarCloud. Check your connection.",

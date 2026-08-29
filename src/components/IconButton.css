@@ -16,6 +16,11 @@
   background: var(--elevated);
 }
 
+.icon-btn:active {
+  background: var(--divider);
+  transform: scale(0.94);
+}
+
 .icon-btn--filled {
   background: var(--elevated);
 }

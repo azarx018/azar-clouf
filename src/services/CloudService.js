@@ -71,7 +71,7 @@ export const CloudService = {
     return apiFetch("/api/trash");
   },
 
-  async uploadFile(file, { folderId = "root", onProgress } = {}) {
+  async uploadFile(file, { folderId = "root", onProgress, signal } = {}) {
     // Uses XHR (not fetch) so we can report real upload progress, which
     // fetch() cannot do for request bodies. Content-Type is left for the
     // browser to set (with the multipart boundary) — never set manually.
@@ -82,6 +82,11 @@ export const CloudService = {
     formData.append("folderId", folderId);
 
     return new Promise((resolve, reject) => {
+      if (signal?.aborted) {
+        reject({ code: "cancelled", message: "Upload cancelled" });
+        return;
+      }
+
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${API_BASE_URL}/api/upload`);
       if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
@@ -114,6 +119,11 @@ export const CloudService = {
       };
 
       xhr.onerror = () => reject({ code: "network_error", message: "Couldn't reach AzarCloud" });
+      xhr.onabort = () => reject({ code: "cancelled", message: "Upload cancelled" });
+
+      if (signal) {
+        signal.addEventListener("abort", () => xhr.abort());
+      }
 
       xhr.send(formData);
     });
@@ -123,6 +133,16 @@ export const CloudService = {
     const { blob, filename } = await apiFetchBlob(`/api/files/${encodeURIComponent(id)}/download`);
     triggerBrowserDownload(blob, filename);
     return { id, downloaded: true };
+  },
+
+  /**
+   * Fetches a file's thumbnail as a blob. Callers create an object URL
+   * from this to use as an <img> src — a plain <img src="..."> can't
+   * carry the Authorization header this private endpoint needs.
+   */
+  async getThumbnailBlob(id) {
+    const { blob } = await apiFetchBlob(`/api/files/${encodeURIComponent(id)}/thumbnail`);
+    return blob;
   },
 
   /**

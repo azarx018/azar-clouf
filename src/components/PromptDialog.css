@@ -46,6 +46,10 @@
   background: var(--elevated);
 }
 
+.prompt-dialog__option:active {
+  background: var(--divider);
+}
+
 .prompt-dialog__option.is-selected {
   background: var(--horizon-soft);
   color: var(--horizon);

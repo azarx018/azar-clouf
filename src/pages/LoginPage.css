@@ -102,6 +102,10 @@
   background: var(--surface);
 }
 
+.auth-field__toggle:active {
+  background: var(--elevated);
+}
+
 .auth-error {
   font-size: var(--text-sm);
   color: var(--error);
@@ -125,6 +129,10 @@
   color: var(--mist);
   font-size: var(--text-sm);
   cursor: pointer;
+}
+
+.auth-switch:active {
+  opacity: 0.6;
 }
 
 .auth-switch span {

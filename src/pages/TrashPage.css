@@ -63,3 +63,8 @@
 .trash-row__action--danger:hover {
   color: var(--error);
 }
+
+.trash-row__action:active {
+  background: var(--elevated);
+  border-radius: var(--radius-full);
+}

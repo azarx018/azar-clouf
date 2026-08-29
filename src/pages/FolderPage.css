@@ -1,3 +1,29 @@
+.folder-page .page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.folder-page__menu {
+  width: 34px;
+  height: 34px;
+  border: none;
+  background: transparent;
+  color: var(--mist);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.folder-page__menu:active {
+  background: var(--elevated);
+  color: var(--error);
+}
+
 .folder-page__count {
   font-family: var(--font-mono);
   font-size: var(--text-xs);

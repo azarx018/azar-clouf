@@ -54,6 +54,10 @@
   background: var(--elevated);
 }
 
+.action-sheet__item:active {
+  background: var(--divider);
+}
+
 .action-sheet__item.is-danger {
   color: var(--error);
 }

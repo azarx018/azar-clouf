@@ -34,6 +34,11 @@
   cursor: pointer;
   display: flex;
   padding: var(--space-1);
+  border-radius: var(--radius-full);
+}
+
+.input__clear:active {
+  background: var(--elevated);
 }
 
 /* Remove default OS search input decorations */

@@ -7,7 +7,9 @@ import { formatBytes } from "../utils/formatBytes.js";
 import "./UploadPage.css";
 
 const STATUS_LABEL = {
+  queued: "Waiting...",
   uploading: "Uploading...",
+  retrying: "Retrying...",
   completed: "Upload complete",
   failed: "Upload failed",
   cancelled: "Cancelled",
@@ -20,12 +22,15 @@ export default function UploadPage() {
     return <EmptyState title="No uploads in progress" description="Files you upload will appear here while they transfer." />;
   }
 
-  const activeCount = queue.filter((f) => f.status === "uploading").length;
+  const activeCount = queue.filter((f) => f.status === "uploading" || f.status === "retrying").length;
+  const queuedCount = queue.filter((f) => f.status === "queued").length;
 
   return (
     <div className="upload-page">
       <h1 className="page-title">
-        {activeCount > 0 ? `Uploading ${activeCount} file${activeCount === 1 ? "" : "s"}` : "Uploads"}
+        {activeCount > 0
+          ? `Uploading ${activeCount} file${activeCount === 1 ? "" : "s"}${queuedCount > 0 ? ` · ${queuedCount} waiting` : ""}`
+          : "Uploads"}
       </h1>
 
       <div className="upload-queue">
@@ -37,6 +42,8 @@ export default function UploadPage() {
                   <Check size={16} color="var(--success)" />
                 ) : file.status === "failed" ? (
                   <AlertCircle size={16} color="var(--error)" />
+                ) : file.status === "queued" ? (
+                  <span className="upload-item__pct">⋯</span>
                 ) : (
                   <span className="upload-item__pct">{Math.round((file.progress || 0) * 100)}%</span>
                 )}
@@ -52,7 +59,7 @@ export default function UploadPage() {
                 {formatBytes(file.size)}
               </div>
             </div>
-            {file.status === "uploading" && (
+            {(file.status === "uploading" || file.status === "queued" || file.status === "retrying") && (
               <button className="upload-item__action" onClick={() => cancelItem(file.id)} aria-label={`Cancel ${file.name}`}>
                 <X size={16} />
               </button>

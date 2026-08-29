@@ -1,0 +1,21 @@
+.thumbnail {
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.thumbnail--icon {
+  background: var(--elevated);
+  color: var(--horizon);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.thumbnail--loading {
+  background: var(--elevated);
+}
+
+.thumbnail--image {
+  object-fit: cover;
+  background: var(--elevated);
+}

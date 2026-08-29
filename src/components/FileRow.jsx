@@ -1,15 +1,12 @@
 import React from "react";
 import { MoreVertical } from "lucide-react";
-import { iconForType } from "../utils/fileIcons.js";
+import Thumbnail from "./Thumbnail.jsx";
 import "./FileRow.css";
 
 export default function FileRow({ file, onOpen, onMenu, metaExtra }) {
-  const Icon = iconForType(file.type);
   return (
     <div className="file-row" onClick={() => onOpen?.(file)}>
-      <div className="file-row__icon">
-        <Icon size={17} />
-      </div>
+      <Thumbnail file={file} size={38} />
       <div className="file-row__body">
         <div className="file-row__name">{file.name}</div>
         <div className="file-row__meta">

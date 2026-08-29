@@ -1,3 +1,7 @@
+.folder-card {
+  position: relative;
+}
+
 .folder-card__icon {
   color: var(--horizon);
   margin-bottom: var(--space-2);
@@ -6,6 +10,10 @@
 .folder-card__name {
   font-weight: 600;
   font-size: var(--text-md);
+  padding-right: var(--space-4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .folder-card__meta {
@@ -13,4 +21,24 @@
   font-size: var(--text-xs);
   color: var(--mist);
   margin-top: 2px;
+}
+
+.folder-card__menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--mist);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.folder-card__menu:active {
+  background: var(--elevated);
 }

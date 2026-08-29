@@ -71,6 +71,10 @@
 
 * {
   box-sizing: border-box;
+  /* Kill the classic mobile "blue/gray box" tap-highlight flash on every
+     tap. Buttons already have their own :active/hover states for real
+     press feedback, so this overlay just gets in the way. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 html,
@@ -98,6 +102,10 @@ h1, h2, h3 {
 
 button, input {
   font-family: inherit;
+  /* Prevent the double-tap-to-zoom delay some mobile browsers add to
+     tappable elements, and stop the iOS long-press callout menu. */
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
 }
 
 :focus-visible {

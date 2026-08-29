@@ -25,6 +25,10 @@
   font-weight: 600;
 }
 
+.search-page__filter:active {
+  background: var(--elevated);
+}
+
 .search-page__count {
   font-family: var(--font-mono);
   font-size: var(--text-xs);

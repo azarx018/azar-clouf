@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Download, Edit2, FolderInput, Share2, Star, Trash2 } from "lucide-react";
-import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog, useSnackbar } from "../components/index.js";
-import { iconForType } from "../utils/fileIcons.js";
+import { Card, Dialog, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog, Thumbnail, useSnackbar } from "../components/index.js";
 import { useAsync } from "../hooks/useAsync.js";
 import { usePageTitle } from "../pageTitle.jsx";
 import { useRouter } from "../router/router.jsx";
@@ -42,7 +41,6 @@ export default function FileDetailPage({ params }) {
     );
   }
 
-  const Icon = iconForType(file.type);
   const backTo = file.folderId && file.folderId !== "root" ? `/folder/${file.folderId}` : "/";
 
   const runAction = async (key) => {
@@ -124,7 +122,7 @@ export default function FileDetailPage({ params }) {
   return (
     <div className="file-detail">
       <div className="file-detail__icon">
-        <Icon size={30} />
+        <Thumbnail file={file} size={64} radius="var(--radius-lg)" />
       </div>
       <h1 className="file-detail__name">{file.name}</h1>
       <div className="file-detail__type">{file.type.toUpperCase()} archive</div>

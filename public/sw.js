@@ -1,7 +1,7 @@
 // Bump APP_VERSION on every deploy (keep in sync with package.json).
 // This changes CACHE_NAME, which makes `activate` below wipe out every
 // old cache — the #1 reason people get stuck seeing an old build.
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.1.2";
 const CACHE_NAME = `azarcloud-shell-v${APP_VERSION}`;
 const SHELL_ASSETS = ["/", "/index.html", "/manifest.json"];
 

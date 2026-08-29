@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
-import { ChevronRight, Plus, Upload } from "lucide-react";
-import { Card, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog } from "../components/index.js";
+import { ChevronRight, Plus, Upload, Trash2 } from "lucide-react";
+import { Card, Dialog, ActionSheet, Button, EmptyState, ErrorState, Skeleton, RenameDialog, MoveDialog, useSnackbar } from "../components/index.js";
 import FolderCard from "../components/FolderCard.jsx";
 import FileRow from "../components/FileRow.jsx";
 import { useFileActions } from "../hooks/useFileActions.js";
@@ -10,7 +10,7 @@ import { useRouter } from "../router/router.jsx";
 import { CloudService } from "../services/CloudService.js";
 import { getFriendlyErrorMessage } from "../services/errorMessages.js";
 import { useUploadQueue } from "../upload/UploadContext.jsx";
-import { onDataChanged } from "../refreshBus.js";
+import { onDataChanged, emitDataChanged } from "../refreshBus.js";
 import "./FolderPage.css";
 
 export default function FolderPage({ params }) {
@@ -18,6 +18,9 @@ export default function FolderPage({ params }) {
   const { enqueueFiles } = useUploadQueue();
   const fileInputRef = useRef(null);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [deleteFolderTarget, setDeleteFolderTarget] = useState(null);
+  const [deletingFolder, setDeletingFolder] = useState(false);
+  const { showSnackbar } = useSnackbar();
 
   const { data, loading, error, reload } = useAsync(async () => {
     const [folder, subfolders, files, breadcrumb] = await Promise.all([
@@ -84,6 +87,27 @@ export default function FolderPage({ params }) {
     e.target.value = "";
   };
 
+  const confirmDeleteFolder = async () => {
+    const target = deleteFolderTarget;
+    setDeletingFolder(true);
+    try {
+      await CloudService.deleteFolder(target.id);
+      showSnackbar(`"${target.name}" deleted — its files moved back to My Cloud`);
+      setDeleteFolderTarget(null);
+      if (target.isCurrent) {
+        const parentCrumb = breadcrumb[breadcrumb.length - 2];
+        navigate(parentCrumb && parentCrumb.id !== "root" ? `/folder/${parentCrumb.id}` : "/");
+        emitDataChanged();
+      } else {
+        reload();
+      }
+    } catch (err) {
+      showSnackbar(getFriendlyErrorMessage(err), { tone: "error" });
+    } finally {
+      setDeletingFolder(false);
+    }
+  };
+
   return (
     <div className="folder-page">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -100,7 +124,16 @@ export default function FolderPage({ params }) {
         ))}
       </nav>
 
-      <h1 className="page-title">{folder.name}</h1>
+      <h1 className="page-title">
+        {folder.name}
+        <button
+          className="folder-page__menu"
+          onClick={() => setDeleteFolderTarget({ ...folder, isCurrent: true })}
+          aria-label={`Delete ${folder.name}`}
+        >
+          <Trash2 size={18} />
+        </button>
+      </h1>
       <div className="folder-page__count">{subfolders.length + files.length} items</div>
 
       {isEmpty && (
@@ -117,6 +150,7 @@ export default function FolderPage({ params }) {
                 folder={f}
                 fileCount={f.fileCount}
                 onOpen={(sub) => navigate(`/folder/${sub.id}`)}
+                onMenu={(sub) => setDeleteFolderTarget(sub)}
               />
             ))}
           </div>
@@ -167,6 +201,18 @@ export default function FolderPage({ params }) {
 
       <RenameDialog target={renameTarget} onCancel={cancelRename} onSubmit={submitRename} />
       <MoveDialog target={moveTarget} onCancel={cancelMove} onSubmit={submitMove} />
+
+      <Dialog
+        open={!!deleteFolderTarget}
+        title={deleteFolderTarget ? `Delete "${deleteFolderTarget.name}"?` : ""}
+        description="The folder will be deleted. Files inside it move back to My Cloud — nothing gets deleted."
+        onClose={() => setDeleteFolderTarget(null)}
+      >
+        <Button variant="secondary" onClick={() => setDeleteFolderTarget(null)} disabled={deletingFolder}>Cancel</Button>
+        <Button variant="danger" onClick={confirmDeleteFolder} disabled={deletingFolder}>
+          {deletingFolder ? "Deleting..." : "Delete folder"}
+        </Button>
+      </Dialog>
     </div>
   );
 }

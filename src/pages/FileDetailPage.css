@@ -5,13 +5,7 @@
 }
 
 .file-detail__icon {
-  width: 64px;
-  height: 64px;
-  border-radius: var(--radius-lg);
-  background: var(--horizon-soft);
-  color: var(--horizon);
   display: flex;
-  align-items: center;
   justify-content: center;
   margin: var(--space-2) auto var(--space-4);
 }

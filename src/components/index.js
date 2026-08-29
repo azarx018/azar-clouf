@@ -13,3 +13,4 @@ export { default as ErrorState } from "./ErrorState.jsx";
 export { default as OfflineBanner } from "./OfflineBanner.jsx";
 export { default as RenameDialog } from "./RenameDialog.jsx";
 export { default as MoveDialog } from "./MoveDialog.jsx";
+export { default as Thumbnail } from "./Thumbnail.jsx";
